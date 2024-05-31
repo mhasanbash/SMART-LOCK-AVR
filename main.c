@@ -8,6 +8,7 @@ char keypad[16] = {'7', '8', '9', '/',
 				   '1', '2', '3', '-',
 				   ' ', '0', '=', '+'};
 
+int fault_count;
 int pass_index, checkpass;
 char password[4] = {'1','2','3','4'};
 char input_pass[4] = {' ', ' ', ' ', ' '};
@@ -84,10 +85,38 @@ void read_keypad(){
 		else
 		k = k << 1;
 	}
+}
+
+
+void menu(){
+	while(1){
+		
+		lcd_clrscr();
+		lcd_gotoxy(0,0);
+		lcd_puts("1-change password");
+		lcd_gotoxy(0,1);
+		lcd_puts("2-exit");
+		_delay_ms(500);
+		read_keypad();
+		key_code = 4*(key_row)+key_col;
+		
+		if (keypad[key_code] == '1'){
+			break;
+		}
+		else if(keypad[key_code] == '2'){
+			break;
+		}
+	}
+}
+
+
+void athentication(){
+	read_keypad();
 	
 	key_code = 4*(key_row)+key_col;
 	lcd_putc(keypad[key_code]);
 	input_pass[pass_index++] =  keypad[key_code];
+	
 	if (pass_index == 4){
 		check_password();
 		if (checkpass)
@@ -95,6 +124,7 @@ void read_keypad(){
 			init();
 			lcd_puts("password correct");
 			_delay_ms(10000);
+			menu();
 			init();
 		}
 		else{
@@ -102,12 +132,25 @@ void read_keypad(){
 			lcd_puts("password wrong!");
 			_delay_ms(10000);
 			init();
+			fault_count++;
 		}
 	}
+	
 	if (key_code == 12){
 		init();
 	}
 	_delay_ms(500);
+}
+
+
+void danger(){
+	for (i=1; i<10; i++)
+	{
+		PORTC = 0x01;
+		_delay_ms(5000);
+		PORTC = 0x00;
+		_delay_ms(5000);
+	}
 }
 
 int main(void)
@@ -116,10 +159,16 @@ int main(void)
 	lcd_init(LCD_DISP_ON);
 	init();
 	DDRD = 0x0F;
+	DDRC = 0x0F;
+	fault_count = 0;
 	
 	while (1)
 	{
-		read_keypad();
+		athentication();
+		if(fault_count == 3){
+			danger();
+			fault_count = 0;
+		}
 	}
 	return 0;
 }
